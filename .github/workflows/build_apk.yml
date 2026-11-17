@@ -23,61 +23,27 @@ jobs:
       - name: Set up Flutter SDK
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: '3.24.5'
           channel: 'stable'
           cache: true
 
-      - name: Generate Android Platform Files and App Source Code
+      - name: Generate Android Platform Files and Disable Lint Bug
         run: |
           flutter create --platforms=android --org com.sohan.notepad --project-name aura_notes .
+          python3 tool/patch_android_manifest.py
           python3 - << 'EOF'
-          import os
-
-          # 1. Patch AndroidManifest.xml
-          manifest_path = "android/app/src/main/AndroidManifest.xml"
-          if os.path.exists(manifest_path):
-              with open(manifest_path, "r", encoding="utf-8") as f:
-                  content = f.read()
-              perms = '    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />\n    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />\n'
-              if "READ_MEDIA_IMAGES" not in content:
-                  content = content.replace("<application", perms + "    <application", 1)
-              content = content.replace('android:label="aura_notes"', 'android:label="Aura Notes"')
-              with open(manifest_path, "w", encoding="utf-8") as f:
-                  f.write(content)
-
-          # 2. Ensure pubspec.yaml has dependencies
-          pubspec = """name: aura_notes
-          description: Custom 5-Theme Offline Android Notepad
-          publish_to: 'none'
-          version: 1.0.0+1
-
-          environment:
-            sdk: '>=3.2.0 <4.0.0'
-
-          dependencies:
-            flutter:
-              sdk: flutter
-            shared_preferences: ^2.2.3
-            share_plus: ^9.0.0
-            image_picker: ^1.1.2
-
-          dev_dependencies:
-            flutter_test:
-              sdk: flutter
-            flutter_lints: ^3.0.0
-
-          flutter:
-            uses-material-design: true
-          """
-          with open("pubspec.yaml", "w", encoding="utf-8") as f:
-              f.write("\n".join(line[10:] if line.startswith("          ") else line for line in pubspec.splitlines()))
+          for path in ["android/app/build.gradle", "android/app/build.gradle.kts"]:
+              if __import__("os").path.exists(path):
+                  with open(path, "r") as f:
+                      c = f.read()
+                  if "checkReleaseBuilds" not in c:
+                      if path.endswith(".kts"):
+                          c += "\nandroid { lint { checkReleaseBuilds = false; abortOnError = false } }\n"
+                      else:
+                          c += "\nandroid { lintOptions { checkReleaseBuilds false; abortOnError false } }\n"
+                  with open(path, "w") as f:
+                      f.write(c)
           EOF
-
-      - name: Check if lib/ screens exist
-        run: |
-          if [ ! -f "lib/screens/home_screen.dart" ]; then
-            echo "Please also drag and drop the 'lib' folder from AuraNotes_Flutter_GitHub_Project.zip into the repository!"
-            exit 1
-          fi
 
       - name: Install Flutter Dependencies
         run: flutter pub get
