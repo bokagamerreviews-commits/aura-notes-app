@@ -29,7 +29,6 @@ class AppController extends ChangeNotifier {
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Load saved theme settings
     final rawTheme = prefs.getString(_themeStorageKey);
     if (rawTheme != null && rawTheme.isNotEmpty) {
       try {
@@ -58,7 +57,6 @@ class AppController extends ChangeNotifier {
       } catch (_) {}
     }
 
-    // Load saved notes
     final rawNotes = prefs.getString(_notesStorageKey);
     if (rawNotes != null && rawNotes.isNotEmpty) {
       try {
@@ -67,7 +65,6 @@ class AppController extends ChangeNotifier {
         _notes = [];
       }
     } else {
-      // Seed 3 starter notes demonstrating Text, Table, and To-Do
       final now = DateTime.now();
       _notes = [
         NoteItem(
@@ -77,10 +74,7 @@ class AppController extends ChangeNotifier {
           isPinned: true,
           createdAt: now,
           updatedAt: now,
-          content:
-              'যেকোনো নোট কার্ডের ওপর কিছুক্ষণ ট্যাপ করে ধরে রাখলে (Long-Press) সাথে সাথে Pin, Copy, Share এবং Permanent Delete করার অপশন সামনে আসবে।
-
-উপরের প্যালেট আইকনে ট্যাপ করে ৫টি প্রিমিয়াম থিম এবং কালার কাস্টমাইজ করুন!',
+          content: 'যেকোনো নোট কার্ডের ওপর কিছুক্ষণ ট্যাপ করে ধরে রাখলে (Long-Press) সাথে সাথে Pin, Copy, Share এবং Permanent Delete করার অপশন সামনে আসবে। উপরের প্যালেট আইকনে ট্যাপ করে ৫টি প্রিমিয়াম থিম এবং কালার কাস্টমাইজ করুন!',
         ),
         NoteItem(
           id: 'sample_todo_2',
@@ -165,7 +159,6 @@ class AppController extends ChangeNotifier {
     await _persistNotes();
   }
 
-  /// Permanent delete — immediately removes the note from memory and disk
   Future<void> deleteNotePermanently(String noteId) async {
     _notes.removeWhere((n) => n.id == noteId);
     notifyListeners();
